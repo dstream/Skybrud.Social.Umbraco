@@ -15,6 +15,8 @@ Eg:
      oAuthData.RefreshLongLivedAccessToken(currSection.Id, "instagramOAuth");
 }`
 
+It's using a custom build of **[Skybrud.Social 0.9.x](https://github.com/dstream/Skybrud.Social)**
+
 **Skybrud.Social for Umbraco 7** focuses on the Umbraco backend by adding a set of data types. As of now there are data types to handle the OAuth authentication for the APIs of Facebook, Twitter, Google and Instagram.
 
 ![Example of OAuth data types in action](https://raw.githubusercontent.com/abjerner/Skybrud.Social.Umbraco/dev-v7/docs/images/readme1.png)
@@ -45,3 +47,8 @@ Manually unzip and move files to the root directory of your website.
 [GitHubReleaseUrl]: https://github.com/abjerner/Skybrud.Social.Umbraco/releases/latest
 [TwitterIntent]: https://twitter.com/intent/tweet?screen_name=abjerner&text=Hey%20there.%20If%20I%27ll%20give%20you%20my%20first%20born,%20will%20you...
 [OurNewTopic]: http://our.umbraco.org/projects/website-utilities/skybrudsocial-for-umbraco-7/general-discussion
+
+
+
+
+
