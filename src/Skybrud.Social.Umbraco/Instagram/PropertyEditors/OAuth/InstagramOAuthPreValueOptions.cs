@@ -53,11 +53,8 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
                 InstagramScope scope = default(InstagramScope);
                 foreach (string alias in (obj.GetString("scope") ?? "").Split(',')) {
                     switch (alias) {
-                        case "public_content": scope |= InstagramScope.PublicContent; break;
-                        //case "follower_list": scope |= InstagramScope.FollowerList; break;
-                        case "comments": scope |= InstagramScope.Comments; break;
-                        case "relationships": scope |= InstagramScope.Relationships; break;
-                        case "likes": scope |= InstagramScope.Likes; break;
+                        case "user_profile": scope |= InstagramScope.user_profile; break;                        
+                        case "user_media": scope |= InstagramScope.user_media; break;                        
                     }
                 }
 
@@ -77,6 +74,5 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
 
         }
 
-    }
-
+    }    
 }

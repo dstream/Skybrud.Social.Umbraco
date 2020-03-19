@@ -6,8 +6,10 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
 
     public class InstagramOAuthPropertyValueConverter : IPropertyValueConverter {
 
+        public const string PropertyEditorAlias = "Skybrud.Social.Instagram.OAuth";
+
         public bool IsConverter(PublishedPropertyType propertyType) {
-            return propertyType.PropertyEditorAlias == "Skybrud.Social.Instagram.OAuth";
+            return propertyType.PropertyEditorAlias == PropertyEditorAlias;
         }
 
         public object ConvertDataToSource(PublishedPropertyType propertyType, object source, bool preview) {

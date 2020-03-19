@@ -125,7 +125,7 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
             // Exchange the authorization code for an access token
             InstagramAccessTokenResponse accessToken;
             try {
-                accessToken = client.GetAccessTokenFromAuthCode(AuthCode);
+                accessToken = client.GetAccessTokenFromAuthCode(AuthCode);                
             } catch (Exception ex) {
                 Content.Text = "<div class=\"error\"><b>Unable to acquire access token</b><br />" + ex.Message + "</div>";
                 return;
@@ -144,6 +144,9 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                 Content.Text += "<p>Hi <strong>" + (user.FullName ?? user.Username) + "</strong></p>";
                 Content.Text += "<p>Please wait while you're being redirected...</p>";
 
+                //Exchange to long-lived access token
+                accessToken = client.GetLongLivedAccessToken(accessToken.Body.AccessToken);
+
                 // Set the callback data
                 InstagramOAuthData data = new InstagramOAuthData {
                     Id = user.Id,
@@ -151,7 +154,8 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                     FullName = user.FullName,
                     Name = user.FullName ?? user.Username,
                     Avatar = user.ProfilePicture,
-                    AccessToken = accessToken.Body.AccessToken
+                    AccessToken = accessToken.Body.AccessToken, //long-lived access token
+                    AccessTokenExpireDate = DateTime.Now.AddSeconds(accessToken.Body.ExpiresIn)
                 };
 
                 // Update the UI and close the popup window

@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Linq;
 using Newtonsoft.Json;
 using Skybrud.Social.Instagram;
+using Skybrud.Social.Instagram.OAuth;
+using Umbraco.Core;
 
 namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
 
@@ -51,13 +54,33 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
         public string AccessToken { get; set; }
 
         /// <summary>
+        /// Access token expire date, 60 days after it created normally
+        /// </summary>
+        [JsonProperty("accessTokenExpireDate")]
+        public DateTime AccessTokenExpireDate { get; set; }
+
+        public bool IsExpired() {
+            return AccessTokenExpireDate < DateTime.Now;
+        }
+
+        /// <summary>
+        /// Going to be expired in [days] day
+        /// </summary>
+        /// <param name="days"></param>
+        /// <returns></returns>
+        public bool IsExpiredSoon(int days)
+        {
+            return AccessTokenExpireDate < DateTime.Now.AddDays(days);
+        }
+
+        /// <summary>
         /// Gets whether the OAuth data is valid - that is whether the OAuth data has a valid
-        /// access token. Calling this property will not check the validate the access token
-        /// against the API.
+        /// access token or expired. Calling this property will not check the validate the access 
+        /// token against the API.
         /// </summary>
         [JsonIgnore]
         public bool IsValid {
-            get { return !String.IsNullOrWhiteSpace(AccessToken); }
+            get { return !String.IsNullOrWhiteSpace(AccessToken) && !IsExpired(); }
         }
 
         #endregion
@@ -84,6 +107,43 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
         /// <param name="str">The JSON string to be deserialized.</param>
         public static InstagramOAuthData Deserialize(string str) {
             return JsonConvert.DeserializeObject<InstagramOAuthData>(str);
+        }        
+
+        /// <summary>
+        /// Refresh long lived access token
+        /// </summary>
+        /// <param name="contentId"></param>
+        /// <param name="propertyAlias"></param>
+        public void RefreshLongLivedAccessToken(int contentId, string propertyAlias)
+        {
+            var content = ApplicationContext.Current.Services.ContentService.GetById(contentId);
+            if (content != null)
+            {
+                var currentOAuthData = Deserialize(content.GetValue<string>(propertyAlias));
+                if (!string.IsNullOrWhiteSpace(currentOAuthData.AccessToken))
+                {
+                    var preValues = InstagramOAuthPreValueOptions.Get(content.ContentType.Alias, propertyAlias);
+                    if (!string.IsNullOrEmpty(preValues.ClientSecret))
+                    {
+                        var client = new InstagramOAuthClient
+                        {
+                            ClientId = preValues.ClientId,
+                            ClientSecret = preValues.ClientSecret,
+                            RedirectUri = preValues.RedirectUri
+                        };
+                        var result = client.RefreshLongLivedAccessToken("");
+                        if (!string.IsNullOrEmpty(result.Body.AccessToken))
+                        {
+                            //Update & save to current content                        
+                            currentOAuthData.AccessToken = result.Body.AccessToken;
+                            currentOAuthData.AccessTokenExpireDate = DateTime.Now.AddSeconds(result.Body.ExpiresIn);
+
+                            content.SetValue(propertyAlias, currentOAuthData.Serialize());
+                            ApplicationContext.Current.Services.ContentService.SaveAndPublishWithStatus(content);
+                        }
+                    }
+                }
+            }
         }
 
         #endregion

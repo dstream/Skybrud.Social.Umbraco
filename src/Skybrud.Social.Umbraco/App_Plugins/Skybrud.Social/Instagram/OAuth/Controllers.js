@@ -3,10 +3,10 @@
     // Define an alias for the editor (eg. used for callbacks)
     var alias = ('skybrudsocial_' + Math.random()).replace('.', '');
 
-    // Get a reference to the current editor state
+    // Get a reference to the current editor state    
     var state = editorState.current;
 
-    $scope.callback = function (data) {
+    $scope.callback = function (data) {        
         $scope.$apply(function () {
             $scope.model.value = data;
         });
@@ -45,11 +45,8 @@ angular.module("umbraco").controller("Skybrud.Social.Instagram.OAuth.PreValues.C
     }
 
     $scope.scopes = [
-        { alias: 'public_content', name: 'Public Content' },
-        { alias: 'follower_list', name: 'Follower list' },
-        { alias: 'comments', name: 'Comments' },
-        { alias: 'relationships', name: 'Relationships' },
-        { alias: 'likes', name: 'Likes' }
+        { alias: 'user_profile', name: 'User profile' },
+        { alias: 'user_media', name: 'User media' }        
     ];
 
     $scope.init = function () {
