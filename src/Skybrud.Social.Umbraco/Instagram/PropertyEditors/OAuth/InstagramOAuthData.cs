@@ -131,7 +131,7 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
                             ClientSecret = preValues.ClientSecret,
                             RedirectUri = preValues.RedirectUri
                         };
-                        var result = client.RefreshLongLivedAccessToken("");
+                        var result = client.RefreshLongLivedAccessToken(currentOAuthData.AccessToken);
                         if (!string.IsNullOrEmpty(result.Body.AccessToken))
                         {
                             //Update & save to current content                        
