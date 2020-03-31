@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Newtonsoft.Json;
+using Skybrud.Social.Facebook.OAuth;
 using Skybrud.Social.Instagram;
 using Skybrud.Social.Instagram.OAuth;
 using Umbraco.Core;
@@ -18,10 +19,16 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
         #region Properties
 
         /// <summary>
-        /// Gets the ID of the authenticated user.
+        /// Gets the user ID of the authenticated user (can be a facebook user).
         /// </summary>
         [JsonProperty("id")]
-        public long Id { get; set; }
+        public string Id { get; set; }
+
+        /// <summary>
+        /// Instagram business user id. If using Instagram Basic API then it's the same with Id
+        /// </summary>
+        [JsonProperty("businessid")]
+        public string BusinessId { get; set; }
 
         /// <summary>
         /// Gets the username of the authenticated user.
@@ -59,19 +66,11 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
         [JsonProperty("accessTokenExpireDate")]
         public DateTime AccessTokenExpireDate { get; set; }
 
-        public bool IsExpired() {
-            return AccessTokenExpireDate < DateTime.Now;
-        }
-
         /// <summary>
-        /// Going to be expired in [days] day
+        /// Professonal Account Will use Instagram Graph API instead of Instagram Basic API
         /// </summary>
-        /// <param name="days"></param>
-        /// <returns></returns>
-        public bool IsExpiredSoon(int days)
-        {
-            return AccessTokenExpireDate < DateTime.Now.AddDays(days);
-        }
+        [JsonProperty("useInstagramGraphAPI")]
+        public bool? UseInstagramGraphAPI { get; set; }        
 
         /// <summary>
         /// Gets whether the OAuth data is valid - that is whether the OAuth data has a valid
@@ -87,11 +86,26 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
 
         #region Methods
 
+        public bool IsExpired()
+        {
+            return AccessTokenExpireDate < DateTime.Now;
+        }
+
+        /// <summary>
+        /// Going to be expired in [days] day
+        /// </summary>
+        /// <param name="days"></param>
+        /// <returns></returns>
+        public bool IsExpiredSoon(int days)
+        {
+            return AccessTokenExpireDate < DateTime.Now.AddDays(days);
+        }
+
         /// <summary>
         /// Initializes a new instance of the InstagramService class.
         /// </summary>
         public InstagramService GetService() {
-            return _service ?? (_service = InstagramService.CreateFromAccessToken(AccessToken));
+            return _service ?? (_service = InstagramService.CreateFromAccessToken(AccessToken, UseInstagramGraphAPI != null? UseInstagramGraphAPI.Value : false));
         }
         
         /// <summary>
@@ -125,21 +139,30 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
                     var preValues = InstagramOAuthPreValueOptions.Get(content.ContentType.Alias, propertyAlias);
                     if (!string.IsNullOrEmpty(preValues.ClientSecret))
                     {
-                        var client = new InstagramOAuthClient
+                        if (!preValues.NeedProfessionalAccount)
                         {
-                            ClientId = preValues.ClientId,
-                            ClientSecret = preValues.ClientSecret,
-                            RedirectUri = preValues.RedirectUri
-                        };
-                        var result = client.RefreshLongLivedAccessToken(currentOAuthData.AccessToken);
-                        if (!string.IsNullOrEmpty(result.Body.AccessToken))
-                        {
-                            //Update & save to current content                        
-                            currentOAuthData.AccessToken = result.Body.AccessToken;
-                            currentOAuthData.AccessTokenExpireDate = DateTime.Now.AddSeconds(result.Body.ExpiresIn);
+                            var client = new InstagramOAuthClient
+                            {
+                                ClientId = preValues.ClientId,
+                                ClientSecret = preValues.ClientSecret,
+                                RedirectUri = preValues.RedirectUri
+                            };
+                            var result = client.RefreshLongLivedAccessToken(currentOAuthData.AccessToken);
+                            if (!string.IsNullOrEmpty(result.Body.AccessToken))
+                            {
+                                //Update & save to current content                        
+                                currentOAuthData.AccessToken = result.Body.AccessToken;
+                                currentOAuthData.AccessTokenExpireDate = DateTime.Now.AddSeconds(result.Body.ExpiresIn);
 
-                            content.SetValue(propertyAlias, currentOAuthData.Serialize());
-                            ApplicationContext.Current.Services.ContentService.SaveAndPublishWithStatus(content);
+                                content.SetValue(propertyAlias, currentOAuthData.Serialize());
+                                ApplicationContext.Current.Services.ContentService.SaveAndPublishWithStatus(content);
+                            }
+                        }
+                        else
+                        {
+                            //can't renew, These tokens are refreshed once per day, when the person using your app makes a request to Facebook's servers. 
+                            //If no requests are made, the token will expire after about 60 days and the person will have to go through the login flow 
+                            //again to get a new token.
                         }
                     }
                 }

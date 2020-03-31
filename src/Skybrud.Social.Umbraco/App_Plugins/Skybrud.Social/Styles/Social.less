@@ -112,7 +112,10 @@
 
     .option {
         > div { margin-left: 20%; }
-        input { width: 75%; }
+        input { 
+            width: 75%; 
+            &[type='checkbox']{ width: auto; }
+        }
         &:after { content: ""; display: table; clear: both; }
     }
     

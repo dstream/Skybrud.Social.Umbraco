@@ -38,6 +38,13 @@
         </div>
         <div class="content">
             <asp:Literal runat="server" ID="Content" />
+            <asp:Panel runat="server" ID="pnlInstagramPageName" Visible="false">
+                Please enter Your Facebook page name that associated with your instagram account:<br />
+                <asp:Textbox runat="server" ID="txtInstagramPageName"></asp:Textbox> 
+                <asp:RequiredFieldValidator runat="server" id="reqName" controltovalidate="txtInstagramPageName" errormessage="Please enter your facebook page name!" ForeColor="red" />
+                <br /><br />
+                <asp:Button runat="server" ID="btnInstagramPageNameSubmit" Text="Continue" OnClick="btnInstagramPageNameSubmit_Click" />
+            </asp:Panel>
         </div>
     </div>
     </form>
