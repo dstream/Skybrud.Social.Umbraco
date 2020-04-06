@@ -59,10 +59,9 @@
                         $http.get('https://graph.facebook.com/' + $scope.model.value.hashtagId + '/top_media?user_id=' + $scope.model.value.businessid
                             + '&fields=media_type,media_url,permalink'
                             + '&access_token=' + $scope.model.value.accessToken)
-                            .then(function (res) {
-                                console.log(res);
+                            .then(function (res) {                                
                                 $scope.loading = false;
-                                $scope.mediaByHashtag = res.data.data.filter(e => e.media_type !== 'CAROUSEL_ALBUM');
+                                $scope.mediaByHashtag = res.data.data.filter(e => e.media_type === 'IMAGE');
                             }, function (error) { $scope.loading = false; alert(error.data.error.message); console.log(error); });
                     }
                 }, function (error) { $scope.loading = false; alert('#' + $scope.tmpHashtag + ' is not available, please try another one'); console.log(error); });

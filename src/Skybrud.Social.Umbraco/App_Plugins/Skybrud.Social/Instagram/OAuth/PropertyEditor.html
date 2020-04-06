@@ -9,7 +9,7 @@
         </div>
 
         <div class="hashtag-wapper" style="margin-bottom:15px;" ng-show="model.value.useInstagramGraphAPI">
-            Search by hashtag
+            Search photos by hashtag
             <input type="text" name="hashtag" ng-model="tmpHashtag" ng-keypress="hashtagEnterKeypress($event)" ng-disabled="loading" style="padding: 2px 3px; height: auto;" />
             <button type="button" ng-click="checkHashtagAvailability()" prevent-default="" ng-disabled="loading">
                 <span ng-if="loading">Checking...</span>
