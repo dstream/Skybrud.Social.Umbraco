@@ -70,7 +70,16 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
         /// Professonal Account Will use Instagram Graph API instead of Instagram Basic API
         /// </summary>
         [JsonProperty("useInstagramGraphAPI")]
-        public bool? UseInstagramGraphAPI { get; set; }        
+        public bool? UseInstagramGraphAPI { get; set; }
+
+        /// <summary>
+        /// Filter by hashtag
+        /// </summary>
+        [JsonProperty("hashtag")]
+        public string Hashtag { get; set; }
+
+        [JsonProperty("hashtagId")]
+        public string HashtagId { get; set; }
 
         /// <summary>
         /// Gets whether the OAuth data is valid - that is whether the OAuth data has a valid

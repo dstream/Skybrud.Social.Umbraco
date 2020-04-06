@@ -1,12 +1,16 @@
-﻿angular.module("umbraco").controller("Skybrud.Social.Instagram.OAuth.Controller", ['$scope', 'editorState', function ($scope, editorState) {
+﻿angular.module("umbraco").controller("Skybrud.Social.Instagram.OAuth.Controller", ['$scope', 'editorState', '$http', function ($scope, editorState, $http) {
 
     // Define an alias for the editor (eg. used for callbacks)
     var alias = ('skybrudsocial_' + Math.random()).replace('.', '');
 
-    // Get a reference to the current editor state    
+    // Get a reference to the current editor state        
     var state = editorState.current;
 
-    $scope.callback = function (data) {        
+    $scope.loading = false;
+    $scope.tmpHashtag = $scope.model.value.hashtag;
+    $scope.mediaByHashtag = null;
+
+    $scope.callback = function (data) {
         $scope.$apply(function () {
             $scope.model.value = data;
         });
@@ -23,9 +27,49 @@
     };
 
     $scope.clear = function () {
-
         $scope.model.value = null;
+    };
 
+    $scope.hashtagEnterKeypress = function (event) {
+        if (event.which === 13 && !$scope.loading) {
+            event.preventDefault();
+            $scope.checkHashtagAvailability();
+        }
+    };
+
+    $scope.checkHashtagAvailability = function () {
+        if ($scope.tmpHashtag && $scope.tmpHashtag !== '') {
+            $scope.loading = true;
+
+            $scope.mediaByHashtag = null;
+            $scope.model.value.hashtag = '';
+            $scope.model.value.hashtagId = '';
+            $http.get('https://graph.facebook.com/v6.0/ig_hashtag_search?user_id='
+                + $scope.model.value.businessid + '&q=' + $scope.tmpHashtag
+                + '&access_token=' + $scope.model.value.accessToken)
+                .then(function (res) {
+                    $scope.loading = false;
+                    if (res.data.length === 0) {
+                        alert('#' + $scope.tmpHashtag + ' is not available, please try another one');
+                    }
+                    else {
+                        $scope.model.value.hashtag = $scope.tmpHashtag;
+                        $scope.model.value.hashtagId = res.data.data[0].id;
+                        $scope.loading = true;
+                        $http.get('https://graph.facebook.com/' + $scope.model.value.hashtagId + '/top_media?user_id=' + $scope.model.value.businessid
+                            + '&fields=media_type,media_url,permalink'
+                            + '&access_token=' + $scope.model.value.accessToken)
+                            .then(function (res) {
+                                console.log(res);
+                                $scope.loading = false;
+                                $scope.mediaByHashtag = res.data.data.filter(e => e.media_type !== 'CAROUSEL_ALBUM');
+                            }, function (error) { $scope.loading = false; alert(error.data.error.message); console.log(error); });
+                    }
+                }, function (error) { $scope.loading = false; alert('#' + $scope.tmpHashtag + ' is not available, please try another one'); console.log(error); });
+        }
+        else {
+            alert("Please input hashtag name");
+        }
     };
 
     // Register the callback function in the global scope
