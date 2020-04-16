@@ -327,6 +327,10 @@
     <Content Include="Skybrud.Social.Umbraco.nuspec" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="compilerconfig.json" />
+    <None Include="compilerconfig.json.defaults">
+      <DependentUpon>compilerconfig.json</DependentUpon>
+    </None>
     <None Include="Properties\AssemblyInfo.json" />
   </ItemGroup>
   <PropertyGroup>
