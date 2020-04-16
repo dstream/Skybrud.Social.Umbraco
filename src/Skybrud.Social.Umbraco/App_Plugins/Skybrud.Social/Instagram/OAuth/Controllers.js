@@ -1,16 +1,20 @@
 ﻿angular.module("umbraco").controller("Skybrud.Social.Instagram.OAuth.Controller", ['$scope', 'editorState', '$http', function ($scope, editorState, $http) {
 
     // Define an alias for the editor (eg. used for callbacks)
-    var alias = ('skybrudsocial_' + Math.random()).replace('.', '');
-
+    var alias = ('skybrudsocial_' + Math.random()).replace('.', '');  
+    
     // Get a reference to the current editor state        
-    var state = editorState.current;
-
+    var state = editorState.current;    
+   
     $scope.loading = false;
-    $scope.tmpHashtag = $scope.model.value.hashtag;
+    $scope.tmpHashtag = typeof $scope.model.value !== 'undefined' ? $scope.model.value.hashtag : '';
     $scope.mediaByHashtag = null;
 
-    $scope.callback = function (data) {
+    //get contentType config
+    var currentPropery = state.properties.filter(e => e.alias == $scope.model.alias)[0];    
+    $scope.needprofessionalaccount = currentPropery.config.config.needprofessionalaccount;
+
+    $scope.callback = function (data) {        
         $scope.$apply(function () {
             $scope.model.value = data;
         });
@@ -24,20 +28,20 @@
 
         window.open(url, 'Instagram OAuth', 'scrollbars=no,resizable=yes,menubar=no,width=800,height=600');
 
-    };
+    };    
 
     $scope.clear = function () {
         $scope.model.value = null;
     };
-
+   
     $scope.hashtagEnterKeypress = function (event) {
         if (event.which === 13 && !$scope.loading) {
             event.preventDefault();
-            $scope.checkHashtagAvailability();
+            $scope.checkHashtagAvailability();            
         }
     };
 
-    $scope.checkHashtagAvailability = function () {
+    $scope.checkHashtagAvailability = function () {        
         if ($scope.tmpHashtag && $scope.tmpHashtag !== '') {
             $scope.loading = true;
 
@@ -45,10 +49,10 @@
             $scope.model.value.hashtag = '';
             $scope.model.value.hashtagId = '';
             $http.get('https://graph.facebook.com/v6.0/ig_hashtag_search?user_id='
-                + $scope.model.value.businessid + '&q=' + $scope.tmpHashtag
-                + '&access_token=' + $scope.model.value.accessToken)
+                    + $scope.model.value.businessid + '&q=' + $scope.tmpHashtag
+                    + '&access_token=' + $scope.model.value.accessToken)
                 .then(function (res) {
-                    $scope.loading = false;
+                    $scope.loading = false;                    
                     if (res.data.length === 0) {
                         alert('#' + $scope.tmpHashtag + ' is not available, please try another one');
                     }
@@ -71,6 +75,13 @@
         }
     };
 
+    $scope.clearHashtag = function () {
+        $scope.mediaByHashtag = null;
+        $scope.model.value.hashtag = '';
+        $scope.model.value.hashtagId = '';
+        $scope.tmpHashtag = '';
+    };
+
     // Register the callback function in the global scope
     window[alias] = $scope.callback;
 
@@ -87,26 +98,24 @@ angular.module("umbraco").controller("Skybrud.Social.Instagram.OAuth.PreValues.C
         };
     }
 
-    $scope.scopes = [
-        { alias: 'user_profile', name: 'User profile' },
-        { alias: 'user_media', name: 'User media' }        
-    ];
+    $scope.scopes = ['user_profile', 'user_media'];
 
-    $scope.init = function () {
-        var temp = $scope.model.value.scope ? $scope.model.value.scope.split(',') : [];
-        angular.forEach($scope.scopes, function (s) {
-            s.selected = temp.indexOf(s.alias) >= 0;
-        });
-    };
+    $scope.professionalScopes = ['instagram_basic', 'instagram_manage_insights', 'instagram_content_publish', 'instagram_manage_comments'];    
 
     $scope.updateScope = function () {
-        var temp = [];
-        angular.forEach($scope.scopes, function (s) {
-            if (s.selected) {
-                temp.push(s.alias);
-            }
-        });
-        $scope.model.value.scope = temp.join(',');
+        if (typeof $scope.model.value.needprofessionalaccount === 'undefined') {
+            $scope.model.value.needprofessionalaccount = false;
+        }
+        if ($scope.model.value.needprofessionalaccount) {
+            $scope.model.value.scope = $scope.professionalScopes.join(',');
+        }
+        else {
+            $scope.model.value.scope = $scope.scopes.join(',');
+        }        
+    };
+
+    $scope.init = function () {
+        $scope.updateScope();
     };
 
     $scope.suggestedRedirectUri = window.location.origin + '/App_Plugins/Skybrud.Social/Dialogs/InstagramOAuth.aspx';

@@ -15,13 +15,13 @@
                 <span ng-if="loading">Checking...</span>
                 <span ng-if="!loading">Check availability and Show samples</span>
             </button>
+            <button type="button" ng-click="clearHashtag()" prevent-default="" ng-disabled="loading">
+                Clear hashtag
+            </button>
             <ul class="preview" ng-if="mediaByHashtag && mediaByHashtag.length !== 0" style="list-style: none; padding: 10px 0 0;margin: 0; display: flex; flex-wrap: wrap; align-items: center;">
                 <li ng-repeat="media in mediaByHashtag" style="display: inline-block; margin-right: 5px; margin-bottom: 5px;">
                     <a href="{{media.permalink}}" target="_blank" class="photo">
-                        <img ng-if="media.media_type !== 'VIDEO'" ng-src="{{media.media_url}}" alt="" style="width: 100px;" />
-                        <video ng-if="media.media_type === 'VIDEO'" width="100" height="100" controls>
-                            <source ng-src="{{media.media_url}}">
-                        </video>
+                        <img ng-src="{{media.media_url}}" alt="" style="width: 100px;" />
                     </a>
                 </li>
             </ul>
@@ -30,7 +30,11 @@
     </div>
 
     <div ng-show="!model.value">
-        <button ng-click="authorize()" prevent-default="" class="btn">Authorize</button>
+        <button ng-click="authorize()" prevent-default="" class="btn oauth" ng-class="needprofessionalaccount?'facebook':''">
+            <i class="fa fa-facebook-square" ng-if="needprofessionalaccount"></i>
+            <i class="fa fa-instagram" ng-if="!needprofessionalaccount"></i>
+            Authorize
+        </button>
     </div>
 
 </div>
