@@ -45,7 +45,7 @@ namespace Skybrud.Social.Umbraco.Instagram
         /// - Read, update, and delete comments of Instagram Business Accounts.       
         /// - Read media objects, such as stories, of Instagram Business Accounts.
         /// </summary>
-        instagram_manage_comments = 2,
+        //instagram_manage_comments = 2,
 
         /// <summary>
         /// The instagram_manage_insights permission allows your app to get access to insights for the Instagram account linked to the Facebook Page. You app can also discover and read the profile info and media of other business profiles.
@@ -54,10 +54,10 @@ namespace Skybrud.Social.Umbraco.Instagram
         /// - Get data insights of an Instagram Business Account.
         /// - Get story insights of an Instagram Business Account.
         /// </summary>
-        instagram_manage_insights = 3,
+        //instagram_manage_insights = 3,
 
         /// <summary>
-        /// The pages_show_list permission allows your app to show the list of the Pages that a person manages.
+        /// The pages_show_list permission allows your app to show the list of the Pages that a person manages. Does not require App Review.
         /// Allowed Usage:
         /// - Provide API access to accounts for showing the list of the Pages that a person manages.
         /// </summary>
