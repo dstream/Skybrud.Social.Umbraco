@@ -15,7 +15,7 @@ namespace Skybrud.Social.Umbraco.Google.PropertyEditors.OAuth {
         #region Properties
         
         /// <summary>
-        /// Gets the ID of the authenticated user.
+        /// Gets the ID of the authenticated user (accountId).
         /// </summary>
         [JsonProperty("id")]
         public string Id { get; set; }
@@ -43,13 +43,25 @@ namespace Skybrud.Social.Umbraco.Google.PropertyEditors.OAuth {
         /// </summary>
         [JsonProperty("clientSecret")]
         public string ClientSecret { get; set; }
-
+        
         /// <summary>
-        /// Gets the refresh token of the authenticated user. This token will not expire unless the
+        /// Gets the refresh token (long-lived) of the authenticated user. This token will not expire unless the
         /// user deauthorizes the app via his/her Google account settings.
         /// </summary>
         [JsonProperty("refreshToken")]
         public string RefreshToken { get; set; }
+
+        /// <summary>
+        /// Location rest api url that want to get the reviews
+        /// </summary>
+        [JsonProperty("locationUrl")]
+        public string LocationUrl { get; set; }
+
+        /// <summary>
+        /// Location name that want to get the reviews
+        /// </summary>
+        [JsonProperty("locationName")]
+        public string LocationName { get; set; }        
 
         /// <summary>
         /// Gets whether the OAuth data is valid - meaning that it has a client ID, client secret
@@ -75,7 +87,7 @@ namespace Skybrud.Social.Umbraco.Google.PropertyEditors.OAuth {
         /// <summary>
         /// Initializes a new instance of the GoogleService class. Invoking this method will make a
         /// call to the Google API since we need to obtain an access token from the stored OAuth
-        /// data.
+        /// data, so recommend to cache the output 
         /// </summary>
         public GoogleService GetService() {
             return _service ?? (_service = GoogleService.CreateFromRefreshToken(ClientId, ClientSecret, RefreshToken));

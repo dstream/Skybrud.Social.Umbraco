@@ -28,6 +28,22 @@
         .content {
             padding: 20px;
         }
+        .selectItems {
+            padding: 0;
+            margin: 15px 0 0;
+            border: solid 1px;
+            border-bottom: 0;
+        }
+        .selectItems li {
+            position: relative;
+            padding: 10px 15px;
+            border-bottom: solid 1px;
+            cursor: pointer;
+            background: #bbb;
+        }
+        .selectItems li:hover {
+            background: #eee;
+        }
     </style>
 </head>
 <body>
@@ -38,8 +54,27 @@
         </div>
         <div class="content">
             <asp:Literal runat="server" ID="Content" />
+            <ul class="selectItems">            
+            <asp:Repeater runat="server" ID="rptSelectItems" EnableViewState="false">
+                <ItemTemplate>
+                <li onclick="onSelectItem('<%#Eval("Url") %>', this)">
+                    <%#Eval("Name") %>                    
+                </li>
+                </ItemTemplate>
+            </asp:Repeater>
+            </ul>
         </div>
     </div>
     </form>
+    <script type="text/javascript">
+        function onSelectItem(itemId, liElement) {
+            if (typeof oautData !== 'undefined') {
+                oautData.locationUrl = itemId;
+                oautData.locationName = liElement.innerText;
+                self.opener.<%= Callback %>(oautData);
+                window.close();
+            }
+        }
+    </script>
 </body>
 </html>

@@ -16,7 +16,8 @@ namespace Skybrud.Social.Umbraco.Controllers.Api
             {
                 GoogleScopeGroups.Basic,
                 GoogleScopeGroups.Analytics,
-                GoogleScopeGroups.YouTube
+                GoogleScopeGroups.YouTube,
+                GoogleScopeGroups.BusinessLocation
             };
         }
     }
@@ -46,7 +47,12 @@ namespace Skybrud.Social.Umbraco.Google.Scope {
             new GoogleScopeItem { Alias = "https://www.googleapis.com/auth/youtube.upload", Type = "youtube", Prefix = "YouTube: ", Name = "Upload", Description = "Upload YouTube videos and manage your YouTube videos." },
             new GoogleScopeItem { Alias = "https://www.googleapis.com/auth/youtubepartner-channel-audit", Type = "youtube", Prefix = "YouTube: ", Name = "Channel audit", Description = "Retrieve the auditDetails part in a channel resource." }
         });
-    
+
+        public static readonly GoogleScopeGroup BusinessLocation = new GoogleScopeGroup("My Business", new[] {            
+            new GoogleScopeItem { Alias = "https://www.googleapis.com/auth/business.manage", Type = "mybusiness", Prefix = "My Business: ", Name = "Manage", Description = "Manage your Business location." },
+            new GoogleScopeItem { Alias = "https://www.googleapis.com/auth/plus.business.manage", Type = "mybusiness", Prefix = "My Business: ", Name = "Manage Plus", Description = "Manage your Business location (plus)." },
+        });
+
     }
 
     internal class GoogleScopeItem {

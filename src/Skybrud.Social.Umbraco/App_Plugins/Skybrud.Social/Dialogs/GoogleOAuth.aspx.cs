@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Web;
 using System.Web.Security;
 using Skybrud.Social.Google;
@@ -94,18 +95,32 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
 
             // Session expired?
             if (AuthState != null && Session["Skybrud.Social_" + AuthState] == null) {
-                Content.Text = "<div class=\"error\">Session expired?</div>";
+                Content.Text = ErrorMessage("Session expired?");
                 return;
             }
 
             // Check whether an error response was received from Google
             if (AuthError != null) {
-                Content.Text = "<div class=\"error\">Error: " + AuthErrorDescription + "</div>";
+                Content.Text = ErrorMessage("Error: " + AuthErrorDescription);
                 if (AuthState != null) Session.Remove("Skybrud.Social:" + AuthState);
+                if (string.IsNullOrEmpty(AuthErrorDescription))
+                {
+                    //cancel the authentication process
+                    Page.ClientScript.RegisterClientScriptBlock(GetType(), "callback", "window.close();", true);
+                }
                 return;
             }
 
-            string state;
+            string state;            
+
+            // Declare the scope
+            GoogleScopeCollection defaultScope = new[] {
+                    GoogleScopes.OpenId,
+                    GoogleScopes.Email,
+                    GoogleScopes.Profile
+                };
+
+            var scope = options.Scope != null ? string.Join(" ", options.Scope) : defaultScope.ToString();
 
             // Redirect the user to the Google login dialog
             if (AuthCode == null) {
@@ -120,18 +135,10 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                     { "PropertyAlias", PropertyAlias},
                     { "Feature", Feature}
                 };
-
-                // Declare the scope
-                GoogleScopeCollection defaultScope = new[] {
-                    GoogleScope.OpenId,
-                    GoogleScope.Email,
-                    GoogleScope.Profile
-                };
-
-                string scope = options.Scope != null ? string.Join(" ", options.Scope) : defaultScope.ToString();
+                
 
                 // Construct the authorization URL
-                string url = client.GetAuthorizationUrl(state, scope, GoogleAccessType.Offline, GoogleApprovalPrompt.Force);
+                string url = client.GetAuthorizationUrl(state, scope, GoogleAccessType.Offline, GoogleApprovalPrompt.consent);
                 
                 // Redirect the user
                 Response.Redirect(url);
@@ -143,42 +150,96 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
             try {
                 info = client.GetAccessTokenFromAuthorizationCode(AuthCode);
             } catch (Exception ex) {
-                Content.Text = "<div class=\"error\"><b>Unable to acquire access token</b><br />" + ex.Message + "</div>";
+                Content.Text = ErrorMessage("<b>Unable to acquire access token</b><br />" + ex.Message);
                 return;
             }
 
             try {
 
+                ////verify the scope, ensure user grant all of scopes
+                //var missingPermissions = info.IsAllScopeGranted(scope);
+                //if (missingPermissions != null && missingPermissions.Any())
+                //{
+                //    Content.Text = ErrorMessage($"Missing permissions, please grant me these permissions: {string.Join(", ", missingPermissions)}", true);                    
+                    //scope = string.Join(" ", missingPermissions);
+                    //// Construct the authorization URL
+                    //// Generate a new unique/random state
+                    //state = Guid.NewGuid().ToString();
+                    //// Save the state in the current user session
+                    //Session["Skybrud.Social_" + state] = new NameValueCollection {
+                    //    { "Callback", Callback},
+                    //    { "ContentTypeAlias", ContentTypeAlias},
+                    //    { "PropertyAlias", PropertyAlias},
+                    //    { "Feature", Feature}
+                    //};
+
+                    //string url = client.GetAuthorizationUrl(state, scope, GoogleAccessType.Offline, GoogleApprovalPrompt.consent) + $"&include_granted_scopes=true";
+
+                    //// Redirect the user
+                    //Response.Redirect(url);
+                //    return;
+                //}
+
                 // Initialize the Google service
-                GoogleService service = GoogleService.CreateFromRefreshToken(client.ClientIdFull, client.ClientSecret, info.RefreshToken);
+                GoogleService service = GoogleService.CreateFromAccessToken(info.AccessToken);
 
                 // Get information about the authenticated user
                 GoogleUserInfo user = service.GetUserInfo();
+
+                var locations = service.MyBusiness.Locations.List(user.Id);
+                if(locations.Body.Items == null || !locations.Body.Items.Any()) {
+                    Content.Text = ErrorMessage("There's no locations in this account, please try another one", true);
+                    return;
+                }
                 
-                Content.Text += "<p>Hi <strong>" + user.Name + "</strong></p>";
-                Content.Text += "<p>Please wait while you're being redirected...</p>";
+                Content.Text += "<p>Hi <strong>" + user.Name + "</strong></p>";                
 
                 // Set the callback data
-                GoogleOAuthData data = new GoogleOAuthData {
+                var data = new GoogleOAuthData {
                     Id = user.Id,
                     Name = user.Name,
                     Avatar = user.Picture,
                     ClientId = client.ClientIdFull,
-                    ClientSecret = client.ClientSecret,
+                    ClientSecret = client.ClientSecret,                    
                     RefreshToken = info.RefreshToken
                 };
 
-                // Update the UI and close the popup window
-                Page.ClientScript.RegisterClientScriptBlock(GetType(), "callback", String.Format(
-                    "self.opener." + Callback + "({0}); window.close();",
-                    data.Serialize()
-                ), true);
+                if (locations.Body.Items.Count() > 1)
+                {
+                    Content.Text += "<p>Please select a location below: </p>";
+
+                    rptSelectItems.DataSource = locations.Body.Items;
+                    rptSelectItems.DataBind();
+                    // print the oauth data to the font-end
+                    Page.ClientScript.RegisterClientScriptBlock(GetType(), "callback", String.Format(
+                        "var oautData = {0};",
+                        data.Serialize()
+                    ), true);
+                }
+                else
+                {
+                    Content.Text += "<p>Please wait while you're being redirected...</p>";
+                    var location = locations.Body.Items.First();
+                    data.LocationUrl = location.Url;
+                    data.LocationName = location.Name;                    
+                    // Update the UI and close the popup window
+                    Page.ClientScript.RegisterClientScriptBlock(GetType(), "callback", String.Format(
+                        "self.opener." + Callback + "({0}); window.close();",
+                        data.Serialize()
+                    ), true);
+                }                
 
             } catch (Exception ex) {
-                Content.Text = "<div class=\"error\"><b>Unable to get user information</b><br />" + ex.Message + "</div>";
+                Content.Text = ErrorMessage("<b>Unable to get user information</b><br />" + ex.Message);
                 return;
             }
 
+        }
+
+        private string ErrorMessage(string error, bool bold = false)
+        {
+            return bold ? $"<div class=\"error\"><strong>{error}</strong></div>"
+                : $"<div class=\"error\">{error}</div>";
         }
     
     }
