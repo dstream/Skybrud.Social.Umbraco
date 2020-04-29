@@ -58,7 +58,8 @@
             <asp:Repeater runat="server" ID="rptSelectItems" EnableViewState="false">
                 <ItemTemplate>
                 <li onclick="onSelectItem('<%#Eval("Url") %>', this)">
-                    <%#Eval("Name") %>                    
+                    <%#Eval("Name") %><br />
+                    <i><small><%# Eval("Address.AddressLines[0]") %></small></i>
                 </li>
                 </ItemTemplate>
             </asp:Repeater>
