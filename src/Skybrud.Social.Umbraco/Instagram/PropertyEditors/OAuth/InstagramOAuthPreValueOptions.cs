@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Skybrud.Social.Instagram;
 using Skybrud.Social.Json.Extensions.JObject;
 
 namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
@@ -20,10 +19,7 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
         public string ClientSecret { get; private set; }
 
         [JsonProperty("redirecturi")]
-        public string RedirectUri { get; private set; }
-
-        [JsonIgnore]
-        public InstagramScope Scope { get; private set; }
+        public string RedirectUri { get; private set; }        
 
         [JsonProperty("scope")]
         public string ScopeStr { get; private set; }
@@ -44,50 +40,97 @@ namespace Skybrud.Social.Umbraco.Instagram.PropertyEditors.OAuth {
         public static InstagramOAuthPreValueOptions Get(string contentTypeAlias, string propertyAlias) {
 
             IDictionary<string, string> prevalues = PreValueHelpers.GetPreValues(contentTypeAlias, propertyAlias);
+            if (prevalues.ContainsKey("config"))
+            {
+                string config;
+                prevalues.TryGetValue("config", out config);
 
-            string config;
-            prevalues.TryGetValue("config", out config);
-
-            try {
-
-                // Parse the JSON for the config/prevalues
-                JObject obj = JObject.Parse(config);
-
-                var options = new InstagramOAuthPreValueOptions
+                try
                 {
-                    JObject = obj,
-                    ClientId = obj.GetString("clientid"),
-                    ClientSecret = obj.GetString("clientsecret"),
-                    RedirectUri = obj.GetString("redirecturi"),                  
-                    ScopeStr = obj.GetString("scope") ?? "",
-                    NeedProfessionalAccount = obj.GetBoolean("needprofessionalaccount")
-                };
 
-                // Determine the scope
-                InstagramScope scope = default(InstagramScope);
-                foreach (string alias in (obj.GetString("scope") ?? "").Split(',')) {
-                    switch (alias) {
-                        case "user_profile": scope |= InstagramScope.user_profile; break;                        
-                        case "user_media": scope |= InstagramScope.user_media; break;                        
+                    // Parse the JSON for the config/prevalues
+                    JObject obj = JObject.Parse(config);
+
+                    var options = new InstagramOAuthPreValueOptions
+                    {
+                        JObject = obj,
+                        ClientId = obj.GetString("clientid"),
+                        ClientSecret = obj.GetString("clientsecret"),
+                        RedirectUri = obj.GetString("redirecturi"),
+                        ScopeStr = obj.GetString("scope") ?? "",
+                        NeedProfessionalAccount = obj.GetBoolean("needprofessionalaccount")
+                    };
+
+                    // Determine the scope               
+                    if (options.NeedProfessionalAccount)
+                    {
+                        options.ScopeStr = string.Join(",", Enum.GetValues(typeof(InstagramGraphScope)).Cast<InstagramGraphScope>().Select(v => v.ToString()));
+                    }
+                    else
+                    {
+                        options.ScopeStr = string.Join(",", Enum.GetValues(typeof(InstagramScope)).Cast<InstagramScope>().Select(v => v.ToString()));
+                    }
+
+                    // Initialize a new instance of the options class
+                    return options;
+
+
+                }
+                catch (Exception)
+                {
+                    return new InstagramOAuthPreValueOptions();
+                }
+            }
+            return new InstagramOAuthPreValueOptions();
+        }
+
+        public static InstagramOAuthPreValueOptions Get(string dataTypeName)
+        {
+            if (!string.IsNullOrEmpty(dataTypeName))
+            {
+                IDictionary<string, string> prevalues = PreValueHelpers.GetPreValues(dataTypeName);
+
+                if (prevalues.ContainsKey("config"))
+                {
+                    string config;
+                    prevalues.TryGetValue("config", out config);
+
+                    try
+                    {
+                        // Parse the JSON for the config/prevalues
+                        JObject obj = JObject.Parse(config);
+
+                        var options = new InstagramOAuthPreValueOptions
+                        {
+                            JObject = obj,
+                            ClientId = obj.GetString("clientid"),
+                            ClientSecret = obj.GetString("clientsecret"),
+                            RedirectUri = obj.GetString("redirecturi"),
+                            ScopeStr = obj.GetString("scope") ?? "",
+                            NeedProfessionalAccount = obj.GetBoolean("needprofessionalaccount")
+                        };
+
+                        // Determine the scope                
+                        if (options.NeedProfessionalAccount)
+                        {
+                            options.ScopeStr = string.Join(",", Enum.GetValues(typeof(InstagramGraphScope)).Cast<InstagramGraphScope>().Select(v => v.ToString()));
+                        }
+                        else
+                        {
+                            options.ScopeStr = string.Join(",", Enum.GetValues(typeof(InstagramScope)).Cast<InstagramScope>().Select(v => v.ToString()));
+                        }
+
+                        // Initialize a new instance of the options class
+                        return options;
+
+                    }
+                    catch (Exception)
+                    {
+                        return new InstagramOAuthPreValueOptions();
                     }
                 }
-                if (options.NeedProfessionalAccount)
-                {
-                    options.ScopeStr = string.Join(",", Enum.GetValues(typeof(InstagramScope)).Cast<InstagramScope>().Select(v => v.ToString()));
-                }
-                else
-                {
-                    options.ScopeStr = string.Join(",", Enum.GetValues(typeof(InstagramScope)).Cast<InstagramScope>().Select(v => v.ToString()));
-                }
-
-                // Initialize a new instance of the options class
-                return options;
-
-
-            } catch (Exception) {
-                return new InstagramOAuthPreValueOptions();
             }
-
+            return new InstagramOAuthPreValueOptions();
         }
 
     }    

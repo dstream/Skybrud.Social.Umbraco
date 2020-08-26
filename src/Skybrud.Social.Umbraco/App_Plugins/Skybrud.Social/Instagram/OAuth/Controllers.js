@@ -22,7 +22,7 @@
 
     $scope.authorize = function () {
 
-        var url = '/App_Plugins/Skybrud.Social/Dialogs/InstagramOAuth.aspx?callback=' + alias;
+        var url = '/App_Plugins/Skybrud.Social/Dialogs/InstagramOAuthForwarder.aspx?callback=' + alias;
         url += "&contentTypeAlias=" + state.contentTypeAlias;
         url += "&propertyAlias=" + $scope.model.alias;
 

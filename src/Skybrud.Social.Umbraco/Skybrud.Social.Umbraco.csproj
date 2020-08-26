@@ -249,6 +249,13 @@
     <Compile Include="App_Plugins\Skybrud.Social\Dialogs\GoogleOAuth.aspx.designer.cs">
       <DependentUpon>GoogleOAuth.aspx</DependentUpon>
     </Compile>
+    <Compile Include="App_Plugins\Skybrud.Social\Dialogs\InstagramOAuthForwarder.aspx.cs">
+      <DependentUpon>InstagramOAuthForwarder.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="App_Plugins\Skybrud.Social\Dialogs\InstagramOAuthForwarder.aspx.designer.cs">
+      <DependentUpon>InstagramOAuthForwarder.aspx</DependentUpon>
+    </Compile>
     <Compile Include="App_Plugins\Skybrud.Social\Dialogs\InstagramOAuth.aspx.cs">
       <DependentUpon>InstagramOAuth.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -263,6 +270,7 @@
     <Compile Include="App_Plugins\Skybrud.Social\Dialogs\TwitterOAuth.aspx.designer.cs">
       <DependentUpon>TwitterOAuth.aspx</DependentUpon>
     </Compile>
+    <Content Include="App_Plugins\Skybrud.Social\Dialogs\InstagramOAuthForwarder.aspx" />
     <Content Include="App_Plugins\Skybrud.Social\Facebook\OAuth\Dialogs.js" />
     <Compile Include="Controllers\Api\GoogleController.cs" />
     <Compile Include="Controllers\Api\FacebookController.cs" />

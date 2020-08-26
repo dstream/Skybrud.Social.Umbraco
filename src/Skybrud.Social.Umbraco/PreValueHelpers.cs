@@ -43,6 +43,16 @@ namespace Skybrud.Social.Umbraco {
         
         }
 
+        public static IDictionary<string, string> GetPreValues(string dataTypeName)
+        {
+            var dataType = DataTypeService.GetDataTypeDefinitionByName(dataTypeName);
+            if (dataType != null)
+            {
+                return GetPreValues(dataType.Id);
+            }
+            return new Dictionary<string, string>();
+        }
+
         /// <summary>
         /// Gets a dictionary containing the pre values of the data type definition with the specified <code>dataTypeDefinitionId</code>.
         /// </summary>

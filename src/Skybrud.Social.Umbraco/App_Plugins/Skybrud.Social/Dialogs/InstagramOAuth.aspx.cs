@@ -20,13 +20,16 @@ using Umbraco.Core.Security;
 using Skybrud.Social.Facebook.Fields;
 using Skybrud.Social.Facebook.Objects.Pages;
 using Skybrud.Social.Facebook.Responses.Pages;
+using Newtonsoft.Json.Linq;
+using Skybrud.Social.Json.Extensions.JObject;
 
 namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
 
-    public partial class InstagramOAuth : System.Web.UI.Page {
+    public partial class InstagramOAuth : System.Web.UI.Page
+    {
 
         #region Umbraco related properties
-        
+
         public string Callback { get; private set; }
 
         public string ContentTypeAlias { get; private set; }
@@ -43,31 +46,41 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
         /// <summary>
         /// Gets the authorizing code from the query string (if specified).
         /// </summary>
-        public string AuthCode {
+        public string AuthCode
+        {
             get { return Request.QueryString["code"]; }
         }
 
-        public string AuthState {
+        /// <summary>
+        /// An optional value indicating a server-specific state. This is a session key in this case
+        /// </summary>
+        public string AuthState
+        {
             get { return Request.QueryString["state"]; }
         }
 
-        public string AuthErrorReason {
+        public string AuthErrorReason
+        {
             get { return Request.QueryString["error_reason"]; }
         }
 
-        public string AuthError {
-            get {
+        public string AuthError
+        {
+            get
+            {
                 var error = Request.QueryString["error"];
                 if (string.IsNullOrEmpty(error))
                 {
                     error = Request.QueryString["error_code"];
                 }
-                return error;                
+                return error;
             }
         }
 
-        public string AuthErrorDescription {
-            get {
+        public string AuthErrorDescription
+        {
+            get
+            {
                 var errorDescription = Request.QueryString["error_description"];
                 if (string.IsNullOrEmpty(errorDescription))
                 {
@@ -75,9 +88,34 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                 }
                 return errorDescription;
             }
-        }        
+        }
 
-        protected override void OnPreInit(EventArgs e) {
+        public object SessionSocial
+        {
+            get
+            {
+                return Session["Skybrud.Social_" + AuthState];
+            }
+            set
+            {
+                Session["Skybrud.Social_" + AuthState] = value;
+            }
+        }
+
+        public object SessionSocialForward
+        {
+            get
+            {
+                return Session["Skybrud.Social_Forward_" + AuthState];
+            }
+            set
+            {
+                Session["Skybrud.Social_Forward_" + AuthState] = value;
+            }
+        }
+
+        protected override void OnPreInit(EventArgs e)
+        {
 
             base.OnPreInit(e);
 
@@ -90,17 +128,34 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
 
         }
 
-        protected void Page_Load(object sender, EventArgs e) {
+        protected void Page_Load(object sender, EventArgs e)
+        {
 
             Callback = Request.QueryString["callback"];
             ContentTypeAlias = Request.QueryString["contentTypeAlias"];
-            PropertyAlias = Request.QueryString["propertyAlias"];            
+            PropertyAlias = Request.QueryString["propertyAlias"];
 
             if (!IsPostBack)
             {
-                if (AuthState != null)
+                var action = Request.QueryString["action"];
+                if (action == "forward")
                 {
-                    string[] stateValue = Session["Skybrud.Social_" + AuthState] as string[];
+                    DoAction_Forward();
+                    return;
+                }
+
+                if (AuthCode != null && AuthState != null && SessionSocialForward != null)
+                {
+                    if (CheckAction_Forward())
+                    {
+                        //stop here if successed, because we just redirect back to original url
+                        return;
+                    }
+                }
+
+                if (AuthState != null)
+                {                    
+                    string[] stateValue = SessionSocial as string[];
                     if (stateValue != null && stateValue.Length == 4)
                     {
                         Callback = stateValue[0];
@@ -108,10 +163,10 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                         PropertyAlias = stateValue[2];
                         PageName = stateValue[3];
                     }
-                }
+                }                
 
                 // Session expired?
-                if (AuthState != null && Session["Skybrud.Social_" + AuthState] == null)
+                if (AuthState != null && SessionSocial == null)
                 {
                     Content.Text = "<div class=\"error\">Session expired?</div>";
                     return;
@@ -137,52 +192,51 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                     if (string.IsNullOrEmpty(AuthCode))
                     {
                         pnlInstagramPageName.Visible = true;
-                    }                    
+                    }
                     FacebookGraphApi(options);
                 }
                 else
                 {
                     InstagramBasicApi(options);
                 }
-            }            
+            }
         }
 
         private void InstagramBasicApi(InstagramOAuthPreValueOptions options)
         {
-            
+
             // Configure the OAuth client based on the options of the prevalue options
             InstagramOAuthClient client = new InstagramOAuthClient
             {
                 ClientId = options.ClientId,
                 ClientSecret = options.ClientSecret,
                 RedirectUri = options.RedirectUri
-            };            
+            };
 
             // Redirect the user to the Instagram login dialog
             if (AuthCode == null)
             {
-                
+
                 // Generate a new unique/random state
                 string state = Guid.NewGuid().ToString();
 
                 // Save the state in the current user session
-                Session["Skybrud.Social_" + state] = new[] { Callback, ContentTypeAlias, PropertyAlias, PageName /*Do not use but have to keep this*/ };
+                SessionSocial = new[] { Callback, ContentTypeAlias, PropertyAlias, /*Do not use here but have to keep this*/ PageName };
 
-                // Construct the authorization URL
-                var scopes = string.Join(",", Enum.GetValues(typeof(InstagramScope)).Cast<InstagramScope>().Select(v => v.ToString()));
-                string url = client.GetAuthorizationUrl(state, scopes);
+                // Construct the authorization URL                
+                string url = client.GetAuthorizationUrl(state, options.ScopeStr);
 
                 // Append the scope to the authorization URL
-                if (!String.IsNullOrWhiteSpace(options.ScopeStr))
-                {
-                    url += "&scope=" + options.ScopeStr.Replace(",", "+");
-                }
+                //if (!String.IsNullOrWhiteSpace(options.ScopeStr))
+                //{
+                //    url += "&scope=" + options.ScopeStr.Replace(",", "+");
+                //}                
 
                 // Redirect the user
                 Response.Redirect(url, true);
                 return;
 
-            }
+            }            
 
             // Exchange the authorization code for an access token
             InstagramAccessTokenResponse accessToken;
@@ -244,9 +298,9 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
         /// </summary>
         /// <param name="options"></param>
         private void FacebookGraphApi(InstagramOAuthPreValueOptions options)
-        {            
+        {
             //don't do anything on first load (asking page name screen)
-            if(string.IsNullOrEmpty(AuthCode))
+            if (string.IsNullOrEmpty(AuthCode))
             {
                 return;
             }
@@ -257,7 +311,7 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                 AppSecret = options.ClientSecret,
                 RedirectUri = options.RedirectUri,
                 Version = "v6.0"
-            };                        
+            };
 
             // Exchange the authorization code for a user access token
             string shortLivedAccessToken;
@@ -271,13 +325,13 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                 return;
             }
 
-            client.AccessToken = shortLivedAccessToken;            
+            client.AccessToken = shortLivedAccessToken;
 
             try
-            {                
+            {
                 // Initialize the Facebook service (no calls are made here)
-                FacebookService service = FacebookService.CreateFromOAuthClient(client);                
-                
+                FacebookService service = FacebookService.CreateFromOAuthClient(client);
+
                 var pageId = FindFacebookPageByName(service, PageName);
                 if (pageId == null)
                 {
@@ -289,9 +343,9 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                 var getPageOptions = new FacebookGetPageOptions(pageId.Id);
                 getPageOptions.Fields.Add(new FacebookField(instagramBusinessAccountField));
 
-                var page = service.Pages.GetPage(getPageOptions);                
+                var page = service.Pages.GetPage(getPageOptions);
                 var instagramBusinessAccount = page.Body.JsonObject.GetObject(instagramBusinessAccountField);
-                if(instagramBusinessAccount == null)
+                if (instagramBusinessAccount == null)
                 {
                     Content.Text = "instagram_business_account is not exists in the response, please try again!";
                     return;
@@ -302,7 +356,7 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
 
 
                 //Exchange to long-lived access token
-                var longLivedAccessToken = client.RenewAccessToken(shortLivedAccessToken);                
+                var longLivedAccessToken = client.RenewAccessToken(shortLivedAccessToken);
 
                 // Set the callback data
 
@@ -366,11 +420,10 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
             string state = Guid.NewGuid().ToString();
 
             // Save the state in the current user session
-            Session["Skybrud.Social_" + state] = new[] { Callback, ContentTypeAlias, PropertyAlias, txtInstagramPageName.Text };
+            SessionSocial = new[] { Callback, ContentTypeAlias, PropertyAlias, txtInstagramPageName.Text };
 
-            // Construct the authorization URL
-            var scopes = Enum.GetValues(typeof(InstagramGraphScope)).Cast<InstagramGraphScope>().Select(v => v.ToString()).ToArray();
-            string url = client.GetAuthorizationUrl(state, scopes);
+            // Construct the authorization URL            
+            string url = client.GetAuthorizationUrl(state, options.ScopeStr);
 
             // Redirect the user
             Response.Redirect(url, true);
@@ -390,6 +443,88 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
 
             return pageId;
         }
-    }
 
+        private void DoAction_Forward()
+        {                                   
+            var state = AuthState;//original sessionId
+            var dataTypeName = "Instagram OAuth - SME";// Request.QueryString["datatype"];//Data type name of Instagram basic API in redirect site
+
+            var options = InstagramOAuthPreValueOptions.Get(dataTypeName);
+            if (!options.IsValid)
+            {
+                Content.Text = "Hold on now! The options of the underlying prevalue editor isn't valid.";
+                return;
+            }
+
+            // Configure the OAuth client based on the options of the prevalue options
+            InstagramOAuthClient client = new InstagramOAuthClient
+            {
+                ClientId = options.ClientId,
+                ClientSecret = options.ClientSecret,
+                RedirectUri = options.RedirectUri,
+            };
+
+            var callback = Request.QueryString["callback"];
+            SessionSocialForward = new[] { dataTypeName, callback };
+            string url = client.GetAuthorizationUrl(state, options.ScopeStr);
+
+            //redirect to Instagram API
+            Response.RedirectPermanent(url, true);
+        }
+
+        private bool CheckAction_Forward()
+        {
+            var sessionValue = SessionSocialForward as string[];
+
+            string errorMessage = string.Empty;
+            // Session expired?
+            if (sessionValue == null)
+            {                
+                return false;
+            }
+            string dataTypeName = string.Empty, callbackUrl = string.Empty;
+            if (sessionValue != null && sessionValue.Length == 2)
+            {
+                dataTypeName = sessionValue[0];
+                callbackUrl = sessionValue[1];                
+            }
+            var options = InstagramOAuthPreValueOptions.Get(dataTypeName);
+            if (!options.IsValid)
+            {
+                errorMessage = $"Hold on now! The {dataTypeName}'s options isn't valid.";
+                Response.RedirectPermanent($"{callbackUrl}?state={AuthState}&error_message={errorMessage}", true);
+                return false;
+            }
+            // Configure the OAuth client based on the options of the prevalue options
+            InstagramOAuthClient client = new InstagramOAuthClient
+            {
+                ClientId = options.ClientId,
+                ClientSecret = options.ClientSecret,
+                RedirectUri = options.RedirectUri
+            };
+            // Exchange the authorization code for an access token
+            InstagramAccessTokenResponse accessToken;
+            try
+            {
+                accessToken = client.GetAccessTokenFromAuthCode(AuthCode);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = "Unable to acquire access token:" + ex.Message;
+                return false;
+            }
+
+            try
+            {                
+                Response.RedirectPermanent($"{callbackUrl}?accessToken={accessToken.Body.AccessToken}&state={AuthState}&error_message={errorMessage}", true);
+                return true;
+
+            }
+            catch (Exception ex)
+            {
+                Content.Text = "<div class=\"error\"><b>Unable to get user information</b><br />" + ex.Message + "</div>";
+            }
+            return false;
+        }
+    }
 }
