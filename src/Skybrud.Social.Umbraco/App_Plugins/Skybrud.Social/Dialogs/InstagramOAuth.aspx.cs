@@ -95,11 +95,12 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
             get
             {
                 return Session["Skybrud.Social_" + AuthState];
-            }
-            set
-            {
-                Session["Skybrud.Social_" + AuthState] = value;
-            }
+            }            
+        }
+
+        public void SetSessionSocial(string authState, object value)
+        {
+            Session["Skybrud.Social_" + authState] = value;
         }
 
         public object SessionSocialForward
@@ -107,11 +108,12 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
             get
             {
                 return Session["Skybrud.Social_Forward_" + AuthState];
-            }
-            set
-            {
-                Session["Skybrud.Social_Forward_" + AuthState] = value;
-            }
+            }            
+        }
+
+        public void SetSessionSocialForward(string authState, object value)
+        {
+            Session["Skybrud.Social_Forward_" + authState] = value;
         }
 
         protected override void OnPreInit(EventArgs e)
@@ -221,7 +223,7 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
                 string state = Guid.NewGuid().ToString();
 
                 // Save the state in the current user session
-                SessionSocial = new[] { Callback, ContentTypeAlias, PropertyAlias, /*Do not use here but have to keep this*/ PageName };
+                SetSessionSocial(state, new[] { Callback, ContentTypeAlias, PropertyAlias, /*Do not use here but have to keep this*/ PageName });
 
                 // Construct the authorization URL                
                 string url = client.GetAuthorizationUrl(state, options.ScopeStr);
@@ -420,7 +422,8 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
             string state = Guid.NewGuid().ToString();
 
             // Save the state in the current user session
-            SessionSocial = new[] { Callback, ContentTypeAlias, PropertyAlias, txtInstagramPageName.Text };
+            var sessionData = new[] { Callback, ContentTypeAlias, PropertyAlias, txtInstagramPageName.Text };
+            SetSessionSocial(state, sessionData);
 
             // Construct the authorization URL            
             string url = client.GetAuthorizationUrl(state, options.ScopeStr);
@@ -465,7 +468,7 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs {
             };
 
             var callback = Request.QueryString["callback"];
-            SessionSocialForward = new[] { dataTypeName, callback };
+            SetSessionSocialForward(state, new[] { dataTypeName, callback });
             string url = client.GetAuthorizationUrl(state, options.ScopeStr);
 
             //redirect to Instagram API

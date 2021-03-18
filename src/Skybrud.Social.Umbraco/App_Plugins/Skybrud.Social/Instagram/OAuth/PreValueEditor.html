@@ -4,25 +4,14 @@
         Instagram uses <strong>OAuth 2.0</strong> for authentication and communication. In order
         for users to authenticate with the Instagram API, you must specify the ID, secret and
         redirect URI of your Instagram app. You can create a new app at the following URL:
-        <strong>http://instagram.com/developer/clients/manage/</strong><br />
+        <strong>https://developers.facebook.com/</strong><br />
         <br />
         <div class="notice icon">
             <i class="icon icon-info"></i>
             <div>
                 When a user authenticates with the Instagram API, an access token
-                is saved along with information about the user. With the Instagram API, access tokens will
-                not expire - unless the user deauthorizes the app.
-            </div>
-        </div>
-        <br />
-        <div class="notice icon">
-            <i class="icon icon-info"></i>
-            <div>
-                Instagram apps will by default run in sandbox mode, which will restrict your access to the Instagram
-                API. It is recommended to see the Instagram API documentation for further information about the
-                restrictions caused by running in sandbox mode. If your Instagram app instead is running in live mode,
-                the scopes listed below will require prior approval by Instagram. The <em>public_content</em> scope is
-                required to request information or media from other users.
+                is saved along with information about the user. With the Instagram API, access token will
+                be renew automatically - unless the user deauthorizes the app.
             </div>
         </div>
     </small>
@@ -61,15 +50,12 @@
     </div>
 
     <div class="option">
-        <label>
-            <span>Scope</span>
-            <small>The scope of the app (the permissions your app should be granted).</small>
+        <label for="needprofessionalaccount">
+            <span>Need professional account</span>
+            <small>Will use <strong>Instagram Graph API</strong> instead of  <strong>Instagram Basic API</strong></small>
         </label>
-        <div class="scopes">
-            <div ng-repeat="scope in scopes" class="label scope" ng-class="{selected: scope.selected}" ng-click="scope.selected = !scope.selected; updateScope();">
-                <span>{{scope.name}}</span>
-            </div>
+        <div>
+            <input type="checkbox" id="needprofessionalaccount" ng-model="model.value.needprofessionalaccount" ng-click="updateScope()" />
         </div>
     </div>
-
 </div>

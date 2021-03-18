@@ -61,7 +61,7 @@ namespace Skybrud.Social.Umbraco.Instagram
         /// Allowed Usage:
         /// - Provide API access to accounts for showing the list of the Pages that a person manages.
         /// </summary>
-        pages_show_list = 4
+        pages_show_list = 4,//equal to FacebookScopes.PagesShowList
 
     }
 }

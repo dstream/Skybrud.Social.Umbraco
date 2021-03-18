@@ -85,6 +85,17 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs
             }
         }
 
+        /// <summary>
+        /// The dev page
+        /// </summary>
+        public bool IsForwardAction
+        {
+            get
+            {
+                return Request.QueryString["action"] == "forward";                
+            }
+        }
+
         protected override void OnPreInit(EventArgs e)
         {
 
@@ -213,7 +224,7 @@ namespace Skybrud.Social.Umbraco.App_Plugins.Skybrud.Social.Dialogs
             }
             catch (Exception ex)
             {
-                Content.Text = "<div class=\"error\"><b>Unable to get user information</b><br />" + ex.Message + "</div>";
+                Content.Text = "<div class=\"error\"><b>Unable to get user information</b><br />" + ex.ToString() + "</div>";
             }
         }
         
